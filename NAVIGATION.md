@@ -1,25 +1,26 @@
 Tue 02 Apr 2024 at 21:34:15
 
-Each note is linked One follows these links
+Each note is linked. One follows these links:
 
-## **Hierarchy of plans in the Palace**
+## Hierarchy of Plans in the PALACE
 
-### daily/weekly (~ days)
+### Daily / Weekly (~ days)
 
-[[daily]] note YYYY-MM-DD [[weekly]] note YYYY-[W]WW
+- [[daily]] note → YYYY-MM-DD
+- [[weekly]] note → YYYY-[W]WW
 
-### zettelkasten shots (~ days/months)
+### Zettelkasten Shots (~ days/months)
 
-[[shots]]
+- [[shots]]
 
-### short-term (~ months)
+### Short-Term (~ months)
 
-[[do]] (**do last** keyword)
+- [[do]] (use **do last** keyword)
 
-### current season note (~ months)
+### Current Season Note (~ months)
 
-[[seasons]] (current season keyword)
+- [[seasons]] (current season keyword)
 
-### long-term (~ years)
+### Long-Term (~ years)
 
-[[longs]] search for **long** keyword in the vault
+- [[longs]] (search for **long** keyword in the vault)
