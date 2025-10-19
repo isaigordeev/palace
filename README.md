@@ -1,28 +1,28 @@
 Tue 19 Mar 2024 at 23:57:51
 
-# [[README]]
+### [[README]]
 
-# NAME
+### NAME
 
 PALACE – A Isai Gordeev note-taking storage
 
-# SYNOPSIS
+### SYNOPSIS
 
 The PALACE is a structured digital vault for notes, ideas, and
 project management. It supports time-linked notes, Zettelkasten
 methodology, and hierarchical organization.
 
-# DESCRIPTION
+### DESCRIPTION
 
 PALACE is a personal storage system for taking, linking, and
 managing notes. Notes are structured with timestamps, tags, and
 unique links for efficient navigation and evolution tracking.
 
-# MOTIVATION
+### MOTIVATION
 
 To write and structure thoughts, ideas, and projects efficiently.
 
-# PHILOSOPHY
+### PHILOSOPHY
 
 Notes are organized into four main domains:
 
@@ -34,7 +34,7 @@ Notes are organized into four main domains:
 Core links denote the meaning of most notes and are placed in
 corresponding folders.
 
-# PRINCIPLES
+### PRINCIPLES
 
 1. Autonomous principle Each note must be clear and independent.
    Enables future linkage.
@@ -48,16 +48,16 @@ corresponding folders.
 6. Absorbing principle Each note should be written and copied if the
    idea is understood.
 
-# NOTE STRUCTURE
+### NOTE STRUCTURE
 
 - Title: {{date:ddd DD MMM YYYY}} at {{time:HH:mm:ss}}
 - Content: main body of the note
-- Tags: used to navigate topics and problems (e.g., #return,
-  #research)
+- Tags: used to navigate topics and problems (e.g., ###return,
+  ###research)
 - Zettelkasten notes: for quick, time-linked thoughts, optionally
   linked to daily notes
 
-# USAGE
+### USAGE
 
 - Notes can be nested or listed, each with a unique link.
 - Weekly notes contain past reflections and next-week plans.
@@ -65,14 +65,14 @@ corresponding folders.
 - If a relevant folder does not exist, create one and link
   appropriately.
 
-# ZETTELKASTEN METHOD
+### ZETTELKASTEN METHOD
 
 - Quick note capture system.
 - Notes are independent by default but can be linked to daily notes.
 - Time-stamped notes example: "2022 19 July 23.23 – Tretyakov
   gallery"
 
-# FILES AND LINKS
+### FILES AND LINKS
 
 - [[README]] – this file
 - [[LICENCE]] – access rights and licensing
@@ -81,6 +81,6 @@ corresponding folders.
 - [[NAVIGATION]] – hierarchy of plans
 - [[START PAGE]] – starting point for using PALACE
 
-# AUTHOR
+### AUTHOR
 
 Isai Gordeev © 2021
