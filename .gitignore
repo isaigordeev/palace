@@ -1,4 +1,6 @@
+**.vscode/
 **.obsidian/
 **.DS_Store
+**.prettierrc
 **/notes/
 **notes.tar.gz
