@@ -1,0 +1,9 @@
+{
+    "printWidth": 68,
+    "proseWrap": "always",
+    "overrides": [ {
+      "files": "notes/**/*",
+      "options": { "parser": "markdown" }
+    }
+  ]
+}
