@@ -1,67 +1,63 @@
 #!/bin/bash
-# encrypt_palace.sh
-# Archive and encrypt PALACE Markdown notes
-# Keeps only the latest encrypted archive (deletes old ones)
+# decrypt_palace.sh
+# Decrypt and extract PALACE Markdown notes
+# Automatically finds the latest encrypted archive
 
 # =====================================================================
 # CONFIGURATION
 # =====================================================================
 
-PALACE_DIR="$(pwd)"                       # Directory containing your PALACE notes
-RECIPIENT="F4F078EB57EA2C67C23E0F5CB94FFCADE32BE35A"   # GPG key fingerprint or email
-TIMESTAMP=$(date +"%Y%m%d-%H%M%S")       # Timestamp for naming
-TAR_FILE="palace-$TIMESTAMP.tar.gz"
-GPG_FILE="$TAR_FILE.gpg"
+PALACE_DIR="$(pwd)"                        # Directory containing your PALACE files
+LATEST_FILE=$(ls -t palace-*.tar.gz.gpg 2>/dev/null | head -n 1)  # Find latest encrypted archive
+DECRYPTED_TAR="palace-decrypted.tar.gz"
+PALACE_SUBDIR="palace"
 
 # =====================================================================
 # START
 # =====================================================================
 
 echo "=============================================================="
-echo "PALACE ENCRYPTION SCRIPT"
+echo "PALACE DECRYPTION SCRIPT"
 echo "--------------------------------------------------------------"
 echo "Working directory: $PALACE_DIR"
-echo "Timestamp:         $TIMESTAMP"
 echo "=============================================================="
 echo
 
 # =====================================================================
-# CLEAN UP OLD FILES
+# CHECK INPUT FILE
 # =====================================================================
 
-echo "[1] Removing old encrypted archives..."
-OLD_FILES=$(ls palace-*.tar.gz.gpg 2>/dev/null)
-if [ -n "$OLD_FILES" ]; then
-    rm -f notes-*.tar.gz.gpg
-    echo "    Old encrypted files removed."
+echo "[1] Checking for latest encrypted archive..."
+if [ -z "$LATEST_FILE" ]; then
+    echo "    ERROR: No encrypted file found (notes-*.tar.gz.gpg)."
+    exit 1
 else
-    echo "    No previous encrypted files found."
+    echo "    Found encrypted file: $LATEST_FILE"
 fi
 echo
 
 # =====================================================================
-# CREATE TAR ARCHIVE
+# DECRYPT FILE
 # =====================================================================
 
-echo "[2] Creating tar archive..."
-if tar czf "$TAR_FILE" "palace" 2>/dev/null; then
-    echo "    Archive created: $TAR_FILE"
+echo "[2] Decrypting with GPG..."
+if gpg -o "$DECRYPTED_TAR" -d "$LATEST_FILE"; then
+    echo "    Decryption successful: $DECRYPTED_TAR"
 else
-    echo "    ERROR: Failed to create tar archive."
+    echo "    ERROR: GPG decryption failed."
     exit 1
 fi
 echo
 
 # =====================================================================
-# ENCRYPT TAR FILE
+# EXTRACT ARCHIVE
 # =====================================================================
 
-echo "[3] Encrypting archive with GPG..."
-if gpg -e -r "$RECIPIENT" -o "$GPG_FILE" "$TAR_FILE"; then
-    echo "    Encrypted file created: $GPG_FILE"
+echo "[3] Extracting archive contents..."
+if tar xzf "$DECRYPTED_TAR"; then
+    echo "    Notes extracted to: $PALACE_SUBDIR/"
 else
-    echo "    ERROR: GPG encryption failed."
-    rm -f "$TAR_FILE"
+    echo "    ERROR: Failed to extract tar archive."
     exit 1
 fi
 echo
@@ -70,9 +66,9 @@ echo
 # CLEANUP
 # =====================================================================
 
-echo "[4] Removing unencrypted archive..."
-rm "$TAR_FILE"
-echo "    Unencrypted file removed."
+echo "[4] Cleaning up temporary files..."
+rm -f "$DECRYPTED_TAR"
+echo "    Temporary decrypted archive removed."
 echo
 
 # =====================================================================
@@ -80,8 +76,8 @@ echo
 # =====================================================================
 
 echo "=============================================================="
-echo "ENCRYPTION COMPLETE"
+echo "DECRYPTION COMPLETE"
 echo "--------------------------------------------------------------"
-echo "Encrypted archive: $GPG_FILE"
+echo "Restored notes directory: $PALACE_SUBDIR/"
 echo "=============================================================="
 echo
