@@ -66,13 +66,6 @@ else
         echo "  $k"
     done
 
-    # Remove all others from history
-    echo "Removing older archives from history:"
-    for OLD in "${ALL_ARCHIVES[@]}"; do
-        if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
-            echo "  Removing $OLD"
-        fi
-    done
     # Keep last 2
     KEEP=( "${ALL_ARCHIVES[@]: -2}" )
 
@@ -86,7 +79,7 @@ else
     done
 
     # Remove older archives from history
-    git filter-repo --force --paths-from-file "$REMOVE_LIST" --invert-paths
+    # git filter-repo --force --paths-from-file "$REMOVE_LIST" --invert-paths
     echo "History rewritten. Only last 2 archives remain."
 fi
 echo "Cleanup complete."
