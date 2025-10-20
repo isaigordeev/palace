@@ -15,7 +15,7 @@ TAR_FILE="palace-$TIMESTAMP.tar.gz"
 GPG_FILE="$TAR_FILE.gpg"
 
 # Commit message prefix
-PREFIX="chore(encrypted-notes): update PALACE notes"
+PREFIX="chore(encrypted-notes): update palace notes"
 
 # =====================================================================
 # VALIDATION
