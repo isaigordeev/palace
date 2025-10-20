@@ -48,16 +48,24 @@ echo "--------------------------------------------------------------"
 # git add "$GPG_FILE"
 git add .
 
-# Remove old archives except the last two
-ARCHIVES=( $(git ls-files palace-*.tar.gz.gpg | sort) )
+# =====================================================================
+echo "[4] Cleaning old archives..."
+ARCHIVES=( $(git ls-files palace-*.tar.gz.gpg | sort -V) )
 NUM_ARCHIVES=${#ARCHIVES[@]}
-if [ $NUM_ARCHIVES -gt 2 ]; then
+
+if [ $NUM_ARCHIVES -ge 2 ]; then
     TO_REMOVE=$((NUM_ARCHIVES - 2))
-    echo "Removing $TO_REMOVE old archive(s) from Git history..."
-    for ((i=0; i<TO_REMOVE; i++)); do
-        git rm --cached "${ARCHIVES[i]}"
-    done
+    if [ $TO_REMOVE -gt 0 ]; then
+        echo "Removing $TO_REMOVE old archive(s) from Git..."
+        for ((i=0; i<TO_REMOVE; i++)); do
+            OLD=${ARCHIVES[i]}
+            echo "Removing $OLD"
+            git rm --cached "$OLD"
+        done
+    fi
 fi
+echo "Cleanup complete."
+echo "============================================================="
 
 COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
 git commit -m "$COMMIT_MESSAGE"
