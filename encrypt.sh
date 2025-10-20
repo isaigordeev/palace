@@ -31,9 +31,11 @@ echo
 
 echo "[1] Removing old encrypted archives..."
 OLD_FILES=$(ls palace-*.tar.gz.gpg 2>/dev/null)
+
 if [ -n "$OLD_FILES" ]; then
-    rm -f notes-*.tar.gz.gpg
-    echo "    Old encrypted files removed."
+    for f in $OLD_FILES; do
+        rm -f "$f" && echo "    Removed: $f"
+    done
 else
     echo "    No previous encrypted files found."
 fi
