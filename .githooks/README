@@ -6,7 +6,11 @@ FOL setup local Git hooks and enable GPG-signed commits.
 
 ## Make Git hooks executable
 
-chmod +x .githooks/pre-commit chmod +x .githooks/pre-push
+chmod +x .githooks/pre-commit
+
+chmod +x .githooks/pre-push
+
+chmod +x .githooks/commit-msg
 
 Tell Git to use the local hooks directory:
 

@@ -1,6 +1,6 @@
 #!/bin/bash
-# pre-push hook: prevent pushing if forbidden folders exist or staged .md files
-# Place in .git/hooks/pre-push and make executable
+# pre-push hook: prevent pushing if forbidden
+# folders exist or staged .md files
 
 # =====================================================================
 # CONFIGURATION
@@ -37,7 +37,39 @@ if [ -n "$STAGED_MD" ]; then
     echo "$STAGED_MD" | sed 's/^/    /'
     FOUND=1
 fi
+echo "=============================================================="
+echo "PRE-PUSH CHECK: Blocking forbidden files"
+echo "--------------------------------------------------------------"
 
+# Read refs from stdin (pre-push passes lines: local_ref local_sha remote_ref remote_sha)
+while read local_ref local_sha remote_ref remote_sha
+do
+    # Determine commits being pushed
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        # New branch, push all commits reachable from local_ref
+        RANGE="$local_sha"
+    else
+        # Existing branch, push only commits not in remote
+        RANGE="$remote_sha..$local_sha"
+    fi
+
+    # List all files in commits being pushed
+    FILES=$(git diff --name-only $RANGE)
+
+    FOUND=0
+    for FILE in $FILES; do
+        if [[ "$FILE" == ".gitignore" ]]; then
+            echo "ERROR: Pushing forbidden file detected: $FILE"
+            FOUND=1
+        fi
+    done
+
+    if [ $FOUND -eq 1 ]; then
+        echo "Push aborted. Remove forbidden files before pushing."
+        echo "=============================================================="
+        exit 1
+    fi
+done
 echo "--------------------------------------------------------------"
 
 if [ $FOUND -eq 1 ]; then

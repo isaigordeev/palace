@@ -17,6 +17,17 @@ if [ -n "$STAGED_MD" ]; then
     exit 1
 fi
 
+# Check if .gitignore is staged
+STAGED_GITIGNORE=$(git diff --cached --name-only | grep -E '^\.gitignore$')
+
+if [ -n "$STAGED_GITIGNORE" ]; then
+    echo "ERROR: Commiting staged .gitignore is not allowed:"
+    echo "    $STAGED_GITIGNORE"
+    echo "Commit aborted."
+    echo "=============================================================="
+    exit 1
+fi
+
 echo "No .md files staged. Commit allowed."
 echo "=============================================================="
 exit 0
