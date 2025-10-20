@@ -3,7 +3,7 @@
 # Place in .git/hooks/pre-commit and make executable
 
 echo "=============================================================="
-echo "PRE-COMMIT CHECK: Block .md files"
+echo "PRE-COMMIT CHECK: Blocking .md files"
 echo "--------------------------------------------------------------"
 
 # Get staged .md files
@@ -17,6 +17,6 @@ if [ -n "$STAGED_MD" ]; then
     exit 1
 fi
 
-echo "No Markdown files staged. Commit allowed."
+echo "No .md files staged. Commit allowed."
 echo "=============================================================="
 exit 0
