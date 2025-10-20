@@ -1,1 +1,4 @@
 chmod +x .githooks/pre-push
+chmod +x .githooks/pre-commit
+
+git config core.hooksPath .githooks
