@@ -36,17 +36,17 @@ corresponding folders.
 
 ### PRINCIPLES
 
-1. Autonomous principle Each note must be clear and independent.
-   Enables future linkage.
-2. Graph principle Each note should link to at least one other note.
-   Ensures a connected network.
-3. Occam's razor principle Notes are kept simple while complete.
-4. Deletion principle Notes are not deleted but can be updated with
-   new notes or revisions.
-5. Simple principle Notes are primarily textual for minimalistic
-   consistency.
-6. Absorbing principle Each note should be written and copied if the
-   idea is understood.
+- Autonomous principle Each note must be clear and independent.
+  Enables future linkage.
+- Graph principle Each note should link to at least one other note.
+  Ensures a connected network.
+- Occam's razor principle Notes are kept simple while complete.
+- Deletion principle Notes are not deleted but can be updated with
+  new notes or revisions.
+- Simple principle Notes are primarily textual for minimalistic
+  consistency.
+- Absorbing principle Each note should be written and copied if the
+  idea is understood.
 
 ### NOTE STRUCTURE
 
