@@ -49,21 +49,37 @@ echo "--------------------------------------------------------------"
 git add .
 
 # =====================================================================
-echo "[4] Cleaning old archives..."
-ARCHIVES=( $(git ls-files palace-*.tar.gz.gpg | sort -V) )
-NUM_ARCHIVES=${#ARCHIVES[@]}
+echo "Cleaning old archives from history (keeping last 2)..."
 
-if [ $NUM_ARCHIVES -ge 2 ]; then
-    TO_REMOVE=$((NUM_ARCHIVES - 2))
-    if [ $TO_REMOVE -gt 0 ]; then
-        echo "Removing $TO_REMOVE old archive(s) from Git..."
-        for ((i=0; i<TO_REMOVE; i++)); do
-            OLD=${ARCHIVES[i]}
-            echo "Removing $OLD"
-            git rm --cached "$OLD"
-        done
-    fi
+# List all historical archives
+ALL_ARCHIVES=( $(git log --pretty=format: --name-only --diff-filter=A | grep 'palace-.*\.tar\.gz\.gpg' | sort -V | uniq) )
+NUM=${#ALL_ARCHIVES[@]}
+echo "Found $NUM archive(s) in history."
+
+if [ $NUM -le 2 ]; then
+    echo "Nothing to remove. Last 2 archives are already kept."
+else
+    # Keep last 2
+    KEEP=( "${ALL_ARCHIVES[@]: -2}" )
+    echo "Keeping last 2 archives:"
+    for k in "${KEEP[@]}"; do
+        echo "  $k"
+    done
+
+    # Remove all others from history
+    echo "Removing older archives from history:"
+    for OLD in "${ALL_ARCHIVES[@]}"; do
+        if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
+            echo "  Removing $OLD"
+        fi
+    done
+
+    # Actually rewrite history
+    git filter-repo --force --invert-paths --path-glob 'palace-*.tar.gz.gpg'
+    echo "History rewritten. Only last 2 archives remain."
 fi
+echo "Cleanup complete."
+echo "============================================================="
 echo "Cleanup complete."
 echo "============================================================="
 
