@@ -45,7 +45,8 @@ echo "=============================================================="
 echo "STAGING AND COMMITTING"
 echo "--------------------------------------------------------------"
 
-git add "$GPG_FILE"
+# git add "$GPG_FILE"
+git add .
 COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
 git commit -m "$COMMIT_MESSAGE"
 
