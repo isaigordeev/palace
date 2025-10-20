@@ -45,28 +45,7 @@ echo "=============================================================="
 echo "STAGING AND COMMITTING"
 echo "--------------------------------------------------------------"
 
-# git add "$GPG_FILE"
-git add .
-
-# =====================================================================
-echo "[4] Cleaning old archives..."
-ARCHIVES=( $(git ls-files palace-*.tar.gz.gpg | sort -V) )
-NUM_ARCHIVES=${#ARCHIVES[@]}
-
-if [ $NUM_ARCHIVES -ge 2 ]; then
-    TO_REMOVE=$((NUM_ARCHIVES - 2))
-    if [ $TO_REMOVE -gt 0 ]; then
-        echo "Removing $TO_REMOVE old archive(s) from Git..."
-        for ((i=0; i<TO_REMOVE; i++)); do
-            OLD=${ARCHIVES[i]}
-            echo "Removing $OLD"
-            git rm --cached "$OLD"
-        done
-    fi
-fi
-echo "Cleanup complete."
-echo "============================================================="
-
+git add "$GPG_FILE"
 COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
 git commit -m "$COMMIT_MESSAGE"
 
