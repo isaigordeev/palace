@@ -52,43 +52,43 @@ git add .
 echo "Cleaning old archives from history (keeping last 2)..."
 
 # List all historical archives
-# ALL_ARCHIVES=( $(git log --pretty=format: --name-only --diff-filter=A | grep 'palace-.*\.tar\.gz\.gpg' | sort -V | uniq) )
-# NUM=${#ALL_ARCHIVES[@]}
-# echo "Found $NUM archive(s) in history."
+ALL_ARCHIVES=( $(git log --pretty=format: --name-only --diff-filter=A | grep 'palace-.*\.tar\.gz\.gpg' | sort -V | uniq) )
+NUM=${#ALL_ARCHIVES[@]}
+echo "Found $NUM archive(s) in history."
 
-# if [ $NUM -le 2 ]; then
-#     echo "Nothing to remove. Last 2 archives are already kept."
-# else
-#     # Keep last 2
-#     KEEP=( "${ALL_ARCHIVES[@]: -2}" )
-#     echo "Keeping last 2 archives:"
-#     for k in "${KEEP[@]}"; do
-#         echo "  $k"
-#     done
+if [ $NUM -le 2 ]; then
+    echo "Nothing to remove. Last 2 archives are already kept."
+else
+    # Keep last 2
+    KEEP=( "${ALL_ARCHIVES[@]: -2}" )
+    echo "Keeping last 2 archives:"
+    for k in "${KEEP[@]}"; do
+        echo "  $k"
+    done
 
-#     # Remove all others from history
-#     echo "Removing older archives from history:"
-#     for OLD in "${ALL_ARCHIVES[@]}"; do
-#         if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
-#             echo "  Removing $OLD"
-#         fi
-#     done
-#     # Keep last 2
-#     KEEP=( "${ALL_ARCHIVES[@]: -2}" )
+    # Remove all others from history
+    echo "Removing older archives from history:"
+    for OLD in "${ALL_ARCHIVES[@]}"; do
+        if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
+            echo "  Removing $OLD"
+        fi
+    done
+    # Keep last 2
+    KEEP=( "${ALL_ARCHIVES[@]: -2}" )
 
-#     # Build a list of files to remove (all except last 2)
-#     REMOVE_LIST=$(mktemp)
-#     for OLD in "${ALL_ARCHIVES[@]}"; do
-#         if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
-#             echo "$OLD" >> "$REMOVE_LIST"
-#             echo "Marked for removal: $OLD"
-#         fi
-#     done
+    # Build a list of files to remove (all except last 2)
+    REMOVE_LIST=$(mktemp)
+    for OLD in "${ALL_ARCHIVES[@]}"; do
+        if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
+            echo "$OLD" >> "$REMOVE_LIST"
+            echo "Marked for removal: $OLD"
+        fi
+    done
 
-# # Remove older archives from history
-#     git filter-repo --force --paths-from-file "$REMOVE_LIST" --invert-paths
-#     echo "History rewritten. Only last 2 archives remain."
-# fi
+    # Remove older archives from history
+    git filter-repo --force --paths-from-file "$REMOVE_LIST" --invert-paths
+    echo "History rewritten. Only last 2 archives remain."
+fi
 echo "Cleanup complete."
 echo "============================================================="
 echo "Cleanup complete."
