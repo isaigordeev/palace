@@ -2,3 +2,7 @@ chmod +x .githooks/pre-push
 chmod +x .githooks/pre-commit
 
 git config core.hooksPath .githooks
+
+
+git config --global user.signingkey <key-id>
+git config --global commit.gpgsign true
