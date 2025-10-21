@@ -35,6 +35,8 @@ fi
 # ENCRYPT NOTES
 # =====================================================================
 
+git filter-repo --strip-blobs-bigger-than 1M
+
 sh encrypt.sh
 
 # =====================================================================
@@ -45,47 +47,7 @@ echo "=============================================================="
 echo "STAGING AND COMMITTING"
 echo "--------------------------------------------------------------"
 
-# git add "$GPG_FILE"
-git add .
-
-# =====================================================================
-echo "Cleaning old archives from history (keeping last 2)..."
-
-# List all historical archives
-ALL_ARCHIVES=( $(git log --pretty=format: --name-only --diff-filter=A | grep 'palace-.*\.tar\.gz\.gpg' | sort -V | uniq) )
-NUM=${#ALL_ARCHIVES[@]}
-echo "Found $NUM archive(s) in history."
-
-if [ $NUM -le 2 ]; then
-    echo "Nothing to remove. Last 2 archives are already kept."
-else
-    # Keep last 2
-    KEEP=( "${ALL_ARCHIVES[@]: -2}" )
-    echo "Keeping last 2 archives:"
-    for k in "${KEEP[@]}"; do
-        echo "  $k"
-    done
-
-    # Keep last 2
-    KEEP=( "${ALL_ARCHIVES[@]: -2}" )
-
-    # Build a list of files to remove (all except last 2)
-    REMOVE_LIST=$(mktemp)
-    for OLD in "${ALL_ARCHIVES[@]}"; do
-        if [[ ! " ${KEEP[@]} " =~ " ${OLD} " ]]; then
-            echo "$OLD" >> "$REMOVE_LIST"
-            echo "Marked for removal: $OLD"
-        fi
-    done
-
-    # Remove older archives from history
-    # git filter-repo --force --paths-from-file "$REMOVE_LIST" --invert-paths
-    echo "History rewritten. Only last 2 archives remain."
-fi
-echo "Cleanup complete."
-echo "============================================================="
-echo "Cleanup complete."
-echo "============================================================="
+git add "$GPG_FILE"
 
 COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
 git commit -m "$COMMIT_MESSAGE"
