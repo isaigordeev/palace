@@ -17,6 +17,7 @@ GPG_FILE="$TAR_FILE.gpg"
 # Commit message prefix
 PREFIX="chore(encrypted-notes): update palace notes"
 
+VERSION_FILE="version.txt"
 # =====================================================================
 # VALIDATION
 # =====================================================================
@@ -47,10 +48,15 @@ echo "=============================================================="
 echo "STAGING AND COMMITTING"
 echo "--------------------------------------------------------------"
 
+COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
+echo "Updating $VERSION_FILE with latest commit info..."
+echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
+
 git add .
 
-COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
 git commit -m "$COMMIT_MESSAGE"
+git remote add origin https://github.com/isaigordeev/palace.git
+git push --force origin main
 
 echo "Commit successful: $COMMIT_MESSAGE"
 echo "=============================================================="
