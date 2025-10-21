@@ -36,7 +36,7 @@ fi
 # ENCRYPT NOTES
 # =====================================================================
 
-git filter-repo --strip-blobs-bigger-than 1M
+git filter-repo --force --strip-blobs-bigger-than 1M
 
 sh encrypt.sh
 
