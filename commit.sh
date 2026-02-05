@@ -48,7 +48,10 @@ echo "=============================================================="
 echo "STAGING AND COMMITTING"
 echo "--------------------------------------------------------------"
 
-COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
+# Get version tag from palace subdirectory's last commit
+VERSION_TAG=$(./sh_commit_version_tag.sh "$PALACE_DIR")
+
+COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
 echo "Updating $VERSION_FILE with latest commit info..."
 echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
 
