@@ -62,6 +62,7 @@ git add .
 git commit -m "$COMMIT_MESSAGE"
 git remote add origin https://github.com/isaigordeev/palace.git
 git push --force origin main
+git branch --set-upstream-to=origin/main main
 
 echo "Commit successful: $COMMIT_MESSAGE"
 echo "=============================================================="
