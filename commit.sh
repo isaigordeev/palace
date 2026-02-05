@@ -27,18 +27,21 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
     exit 1
 fi
 
+SKIP_ENCRYPT=false
 if [ ! -d "$PALACE_DIR" ]; then
-    echo "ERROR: Notes directory not found: $PALACE_DIR"
-    exit 1
+    echo "WARNING: Notes directory not found: $PALACE_DIR"
+    echo "Using default commit tag..."
+    SKIP_ENCRYPT=true
 fi
 
 # =====================================================================
 # ENCRYPT NOTES
 # =====================================================================
 
-git filter-repo --force --strip-blobs-bigger-than 1M
-
-sh encrypt.sh
+if [ "$SKIP_ENCRYPT" = false ]; then
+    git filter-repo --force --strip-blobs-bigger-than 1M
+    sh encrypt.sh
+fi
 
 # =====================================================================
 # STAGE AND COMMIT
@@ -50,8 +53,12 @@ echo "--------------------------------------------------------------"
 
 # Get version tag from palace subdirectory's last commit
 # Show debug info locally, but only capture the version tag line
-./tag.sh "$PALACE_DIR" --debug
-VERSION_TAG=$(./tag.sh "$PALACE_DIR")
+if [ "$SKIP_ENCRYPT" = false ]; then
+    ./tag.sh "$PALACE_DIR" --debug
+    VERSION_TAG=$(./tag.sh "$PALACE_DIR")
+else
+    VERSION_TAG="default"
+fi
 
 COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
 echo "Updating $VERSION_FILE with latest commit info..."
