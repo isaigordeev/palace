@@ -2,8 +2,9 @@
 # Script to find the most frequent word in the last commit diff
 # and output a version tag. Called from sh_commit hook.
 # If equal frequency, picks the longest word.
+# Words must be at least MIN_WORD_LEN characters.
 #
-# Usage: sh_commit_version_tag.sh [repo_dir] [--debug]
+# Usage: tag.sh [repo_dir] [--debug]
 #   repo_dir: defaults to ./palace
 #   --debug: show detailed analysis
 
@@ -11,6 +12,7 @@ set -e
 
 REPO_DIR="./palace"
 DEBUG=false
+MIN_WORD_LEN=3
 
 for arg in "$@"; do
     case $arg in
@@ -49,11 +51,12 @@ if $DEBUG; then
     echo "=== DEBUG: Raw diff lines ==="
     echo "$diff_content" | head -20
     echo ""
-    echo "=== DEBUG: Word frequency (top 10) ==="
+    echo "=== DEBUG: Word frequency (top 10, min ${MIN_WORD_LEN} chars) ==="
     echo "$diff_content" | \
         tr '[:upper:]' '[:lower:]' | \
         tr -cs '[:alnum:]' '\n' | \
         grep -v '^$' | \
+        awk -v min="$MIN_WORD_LEN" 'length >= min' | \
         sort | uniq -c | sort -rn | head -10
     echo ""
 fi
@@ -63,11 +66,12 @@ if [ -z "$diff_content" ]; then
     exit 0
 fi
 
-# Count word frequency, find most frequent (longest if tie)
+# Count word frequency, find most frequent (longest if tie), min 3 chars
 most_frequent=$(echo "$diff_content" | \
     tr '[:upper:]' '[:lower:]' | \
     tr -cs '[:alnum:]' '\n' | \
     grep -v '^$' | \
+    awk -v min="$MIN_WORD_LEN" 'length >= min' | \
     sort | uniq -c | sort -rn | \
     awk '
     BEGIN { max_count = 0; best_word = "" }
