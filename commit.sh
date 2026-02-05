@@ -49,6 +49,8 @@ echo "STAGING AND COMMITTING"
 echo "--------------------------------------------------------------"
 
 # Get version tag from palace subdirectory's last commit
+# Show debug info locally, but only capture the version tag line
+./tag.sh "$PALACE_DIR" --debug
 VERSION_TAG=$(./tag.sh "$PALACE_DIR")
 
 COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
