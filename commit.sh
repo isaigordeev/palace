@@ -30,7 +30,7 @@ fi
 SKIP_ENCRYPT=false
 if [ ! -d "$PALACE_DIR" ]; then
     echo "WARNING: Notes directory not found: $PALACE_DIR"
-    echo "Using default commit tag..."
+    echo "Skipping encryption, version file will not be updated."
     SKIP_ENCRYPT=true
 fi
 
@@ -56,13 +56,12 @@ echo "--------------------------------------------------------------"
 if [ "$SKIP_ENCRYPT" = false ]; then
     ./tag.sh "$PALACE_DIR" --debug
     VERSION_TAG=$(./tag.sh "$PALACE_DIR")
+    COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
+    echo "Updating $VERSION_FILE with latest commit info..."
+    echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
 else
-    VERSION_TAG="default"
+    COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
 fi
-
-COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
-echo "Updating $VERSION_FILE with latest commit info..."
-echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
 
 git add .
 
