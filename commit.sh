@@ -18,6 +18,24 @@ GPG_FILE="$TAR_FILE.gpg"
 PREFIX="chore(encrypted-notes): update palace notes"
 
 VERSION_FILE="version.txt"
+
+# =====================================================================
+# PARSE ARGUMENTS
+# =====================================================================
+
+USE_DEFAULT_TAG=false
+FORCE_SKIP_ENCRYPT=false
+for arg in "$@"; do
+    case $arg in
+        --default)
+            USE_DEFAULT_TAG=true
+            ;;
+        --no-encrypt)
+            FORCE_SKIP_ENCRYPT=true
+            ;;
+    esac
+done
+
 # =====================================================================
 # VALIDATION
 # =====================================================================
@@ -28,7 +46,10 @@ if ! git rev-parse --is-inside-work-tree &>/dev/null; then
 fi
 
 SKIP_ENCRYPT=false
-if [ ! -d "$PALACE_DIR" ]; then
+if [ "$FORCE_SKIP_ENCRYPT" = true ]; then
+    echo "Skipping encryption (--no-encrypt flag)."
+    SKIP_ENCRYPT=true
+elif [ ! -d "$PALACE_DIR" ]; then
     echo "WARNING: Notes directory not found: $PALACE_DIR"
     echo "Skipping encryption, version file will not be updated."
     SKIP_ENCRYPT=true
@@ -54,8 +75,12 @@ echo "--------------------------------------------------------------"
 # Get version tag from palace subdirectory's last commit
 # Show debug info locally, but only capture the version tag line
 if [ "$SKIP_ENCRYPT" = false ]; then
-    ./tag.sh "$PALACE_DIR" --debug
-    VERSION_TAG=$(./tag.sh "$PALACE_DIR")
+    if [ "$USE_DEFAULT_TAG" = true ]; then
+        VERSION_TAG="default"
+    else
+        ./tag.sh "$PALACE_DIR" --debug
+        VERSION_TAG=$(./tag.sh "$PALACE_DIR")
+    fi
     COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
     echo "Updating $VERSION_FILE with latest commit info..."
     echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
