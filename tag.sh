@@ -52,7 +52,7 @@ if $DEBUG; then
     echo "=== DEBUG: Raw diff lines ==="
     echo "$diff_content" | head -20
     echo ""
-    echo "=== DEBUG: Word frequency (top 10, min ${MIN_WORD_LEN} chars) ==="
+    echo "=== DEBUG: Word frequency (top 10, min ${MIN_WORD_LEN} bytes) ==="
     echo "$diff_content" | \
         tr '[:upper:]' '[:lower:]' | \
         tr -cs '[:alnum:]' '\n' | \
