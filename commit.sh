@@ -1,6 +1,19 @@
 #!/bin/bash
 # git_commit_encrypted.sh
 # Archive, encrypt PALACE notes, stage, and commit the encrypted archive
+#
+# Usage: sh commit.sh [OPTIONS]
+#
+# Options:
+#   --default      Use "default" as version tag instead of calculating from git
+#   --no-encrypt   Skip encryption step (commits other changes only)
+#   --help         Show this help message
+#
+# Examples:
+#   sh commit.sh                      # Full encrypt + auto version tag
+#   sh commit.sh --default            # Full encrypt + "default" tag
+#   sh commit.sh --no-encrypt         # Skip encryption, no version update
+#   sh commit.sh --no-encrypt --default  # Combine flags
 
 # =====================================================================
 # CONFIGURATION
@@ -32,6 +45,10 @@ for arg in "$@"; do
             ;;
         --no-encrypt)
             FORCE_SKIP_ENCRYPT=true
+            ;;
+        --help)
+            sed -n '3,14p' "$0" | sed 's/^# \?//'
+            exit 0
             ;;
     esac
 done
