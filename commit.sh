@@ -5,15 +5,15 @@
 # Usage: sh commit.sh [OPTIONS]
 #
 # Options:
-#   --default      Use "default" as version tag instead of calculating from git
-#   --no-encrypt   Skip encryption step (commits other changes only)
-#   --help         Show this help message
+#   --default, --no-tag   Use "default" as version tag instead of calculating from git
+#   --no-encrypt          Skip encryption step (commits other changes only)
+#   --help                Show this help message
 #
 # Examples:
-#   sh commit.sh                      # Full encrypt + auto version tag
-#   sh commit.sh --default            # Full encrypt + "default" tag
-#   sh commit.sh --no-encrypt         # Skip encryption, no version update
-#   sh commit.sh --no-encrypt --default  # Combine flags
+#   sh commit.sh                         # Full encrypt + auto version tag
+#   sh commit.sh --no-tag                # Full encrypt + "default" tag
+#   sh commit.sh --no-encrypt            # Skip encryption, no version update
+#   sh commit.sh --no-encrypt --no-tag   # Combine flags
 
 # =====================================================================
 # CONFIGURATION
@@ -40,7 +40,7 @@ USE_DEFAULT_TAG=false
 FORCE_SKIP_ENCRYPT=false
 for arg in "$@"; do
     case $arg in
-        --default)
+        --default|--no-tag)
             USE_DEFAULT_TAG=true
             ;;
         --no-encrypt)
