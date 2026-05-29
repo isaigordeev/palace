@@ -1,7 +1,7 @@
 #!/bin/bash
-# Script to find the most frequent word in the last commit diff
+# Script to find the longest word in the last commit diff
 # and output a version tag. Called from sh_commit hook.
-# If equal frequency, picks the longest word.
+# If equal length, picks the most frequent word.
 # Words must be at least MIN_WORD_LEN characters.
 #
 # Usage: tag.sh [repo_dir] [--debug]
@@ -64,20 +64,20 @@ if [ -z "$diff_content" ]; then
     exit 0
 fi
 
-# Pick the most frequent word, ties broken by longest, min MIN_WORD_LEN chars
+# Pick the longest word, ties broken by frequency, min MIN_WORD_LEN chars
 most_frequent=$(echo "$diff_content" | \
     perl -CSD -ne 'for (split /[^\w]+/, lc($_)) { print "$_\n" if length($_) >= '"$MIN_WORD_LEN"' && /^\p{Cyrillic}+$/ }' | \
     LC_ALL=C sort | LC_ALL=C uniq -c | LC_ALL=C sort -rn | \
     perl -CSD -e '
-        my ($best_count, $best_len, $best_word) = (0, 0, "");
+        my ($best_len, $best_count, $best_word) = (0, 0, "");
         while (<>) {
             chomp;
             s/^\s+//;
             my ($count, $word) = split /\s+/, $_, 2;
             my $len = length($word);
-            if ($count > $best_count || ($count == $best_count && $len > $best_len)) {
-                $best_count = $count;
+            if ($len > $best_len || ($len == $best_len && $count > $best_count)) {
                 $best_len = $len;
+                $best_count = $count;
                 $best_word = $word;
             }
         }
