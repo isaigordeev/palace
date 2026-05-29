@@ -52,45 +52,40 @@ if $DEBUG; then
     echo "=== DEBUG: Raw diff lines ==="
     echo "$diff_content" | head -20
     echo ""
-    echo "=== DEBUG: Word frequency (top 10, min ${MIN_WORD_LEN} bytes) ==="
+    echo "=== DEBUG: Word frequency (top 10, min ${MIN_WORD_LEN} chars) ==="
     echo "$diff_content" | \
-        tr '[:upper:]' '[:lower:]' | \
-        tr -cs '[:alnum:]' '\n' | \
-        grep -v '^$' | \
-        awk -v min="$MIN_WORD_LEN" 'length >= min' | \
-        sort | uniq -c | sort -rn | head -10
+        perl -CSD -ne 'for (split /[^\w]+/, lc($_)) { print "$_\n" if length($_) >= '"$MIN_WORD_LEN"' && /^\p{Cyrillic}+$/ }' | \
+        LC_ALL=C sort | LC_ALL=C uniq -c | LC_ALL=C sort -rn | head -10
     echo ""
 fi
 
 if [ -z "$diff_content" ]; then
-    echo "version tag: \"empty\""
+    echo "version tag: \"увы\""
     exit 0
 fi
 
-# Count word frequency, find most frequent (longest if tie), min 3 chars
+# Pick the most frequent word, ties broken by longest, min MIN_WORD_LEN chars
 most_frequent=$(echo "$diff_content" | \
-    tr '[:upper:]' '[:lower:]' | \
-    tr -cs '[:alnum:]' '\n' | \
-    grep -v '^$' | \
-    awk -v min="$MIN_WORD_LEN" 'length >= min' | \
-    sort | uniq -c | sort -rn | \
-    awk '
-    BEGIN { max_count = 0; best_word = "" }
-    {
-        count = $1
-        word = $2
-        if (count > max_count) {
-            max_count = count
-            best_word = word
-        } else if (count == max_count && length(word) > length(best_word)) {
-            best_word = word
+    perl -CSD -ne 'for (split /[^\w]+/, lc($_)) { print "$_\n" if length($_) >= '"$MIN_WORD_LEN"' && /^\p{Cyrillic}+$/ }' | \
+    LC_ALL=C sort | LC_ALL=C uniq -c | LC_ALL=C sort -rn | \
+    perl -CSD -e '
+        my ($best_count, $best_len, $best_word) = (0, 0, "");
+        while (<>) {
+            chomp;
+            s/^\s+//;
+            my ($count, $word) = split /\s+/, $_, 2;
+            my $len = length($word);
+            if ($count > $best_count || ($count == $best_count && $len > $best_len)) {
+                $best_count = $count;
+                $best_len = $len;
+                $best_word = $word;
+            }
         }
-    }
-    END { print best_word }
+        print "$best_word\n";
     ')
 
 if [ -z "$most_frequent" ]; then
-    most_frequent="empty"
+    most_frequent="увы"
 fi
 
 echo "version tag: \"$most_frequent\""
