@@ -7,7 +7,7 @@ DAILY_ROOT="palace/notes/management/daily"
 YEAR=$(date +%Y)
 MONTH=$(date +%m)
 TYPE="month"
-LAYOUT="tab"
+LAYOUT="git"
 
 while [ $# -gt 0 ]; do
     case "$1" in
