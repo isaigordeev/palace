@@ -1,11 +1,27 @@
 #!/bin/bash
 # Render current month's daily-note activity as an ASCII calendar.
-# Usage: ./_calendar.sh [YYYY] [MM]
+# Usage: ./_calendar.sh [-c|--current] [-m MM] [-y YYYY]
 
 DAILY_ROOT="palace/notes/management/daily"
 
-YEAR=${1:-$(date +%Y)}
-MONTH=${2:-$(date +%m)}
+YEAR=$(date +%Y)
+MONTH=$(date +%m)
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -c|--current)
+            YEAR=$(date +%Y); MONTH=$(date +%m); shift ;;
+        -m|--month)
+            MONTH="$2"; shift 2 ;;
+        -y|--year)
+            YEAR="$2"; shift 2 ;;
+        -h|--help)
+            echo "Usage: $0 [-c|--current] [-m MM] [-y YYYY]"; exit 0 ;;
+        *)
+            echo "Unknown option: $1" >&2; exit 1 ;;
+    esac
+done
+
 MONTH=$(printf "%02d" "$((10#$MONTH))")
 
 DIR="$DAILY_ROOT/$YEAR/$MONTH"
