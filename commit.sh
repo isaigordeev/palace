@@ -7,13 +7,15 @@
 # Options:
 #   --default, --no-tag   Use "default" as version tag instead of calculating from git
 #   --no-encrypt          Skip encryption step (commits other changes only)
+#   -y, --yes             Skip the confirm prompt before commit + push
 #   --help                Show this help message
 #
 # Examples:
-#   sh commit.sh                         # Full encrypt + auto version tag
+#   sh commit.sh                         # Full encrypt + auto tag (asks y/N/c)
 #   sh commit.sh --no-tag                # Full encrypt + "default" tag
 #   sh commit.sh --no-encrypt            # Skip encryption, no version update
 #   sh commit.sh --no-encrypt --no-tag   # Combine flags
+#   sh commit.sh -y                      # Non-interactive (no prompt)
 
 # =====================================================================
 # CONFIGURATION
@@ -38,6 +40,7 @@ VERSION_FILE="version.txt"
 
 USE_DEFAULT_TAG=false
 FORCE_SKIP_ENCRYPT=false
+ASSUME_YES=false
 for arg in "$@"; do
     case $arg in
         --default|--no-tag)
@@ -46,8 +49,11 @@ for arg in "$@"; do
         --no-encrypt)
             FORCE_SKIP_ENCRYPT=true
             ;;
+        -y|--yes)
+            ASSUME_YES=true
+            ;;
         --help)
-            sed -n '3,14p' "$0" | sed 's/^# \?//'
+            sed -n '3,18p' "$0" | sed 's/^# \?//'
             exit 0
             ;;
     esac
@@ -91,18 +97,100 @@ echo "--------------------------------------------------------------"
 
 # Get version tag from palace subdirectory's last commit
 # Show debug info locally, but only capture the version tag line
+CAND_FILE=""
 if [ "$SKIP_ENCRYPT" = false ]; then
     if [ "$USE_DEFAULT_TAG" = true ]; then
         VERSION_TAG="default"
     else
         ./tag.sh "$PALACE_DIR" --debug
         VERSION_TAG=$(./tag.sh "$PALACE_DIR")
+        CAND_FILE=$(mktemp -t commit_cand.XXXXXX)
+        ./tag.sh "$PALACE_DIR" --debug 2>/dev/null \
+            | grep -E '^\s*len=' | head -10 \
+            | awk '{print $NF}' > "$CAND_FILE"
     fi
     COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
-    echo "Updating $VERSION_FILE with latest commit info..."
-    echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
 else
     COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
+fi
+
+# =====================================================================
+# CONFIRM (re-prompts after each [c] choice)
+# =====================================================================
+
+read_tty() {
+    if [ -r /dev/tty ]; then
+        read -r "$1" </dev/tty
+    else
+        read -r "$1"
+    fi
+}
+
+if [ "$ASSUME_YES" = false ]; then
+    while true; do
+        echo
+        echo "--------------------------------------------------------------"
+        echo "Commit message: $COMMIT_MESSAGE"
+        echo "  [y] yes — commit and push"
+        echo "  [n] no  — discard everything"
+        echo "  [c] choose another tag"
+        printf "Choice [y/N/c]: "
+        read_tty reply
+        case "$reply" in
+            y|Y|yes|YES|Yes)
+                break
+                ;;
+            c|C|choose|CHOOSE)
+                if [ -z "$CAND_FILE" ] || [ ! -s "$CAND_FILE" ]; then
+                    echo "No candidates (--no-encrypt or --no-tag in effect)."
+                    printf "Enter custom tag word (empty to cancel): "
+                    read_tty new_tag
+                else
+                    echo
+                    echo "Top candidates:"
+                    awk '{ printf "  [%d] %s\n", NR, $0 }' "$CAND_FILE"
+                    echo
+                    printf "Enter number 1-%d, a custom word, or empty to cancel: " \
+                        "$(wc -l < "$CAND_FILE" | tr -d ' ')"
+                    read_tty new_tag
+                    case "$new_tag" in
+                        ''|*[!0-9]*) : ;;
+                        *)
+                            picked=$(sed -n "${new_tag}p" "$CAND_FILE")
+                            [ -n "$picked" ] && new_tag="$picked"
+                            ;;
+                    esac
+                fi
+                if [ -n "$new_tag" ]; then
+                    case "$new_tag" in
+                        "version tag:"*)
+                            VERSION_TAG="$new_tag"
+                            ;;
+                        *)
+                            VERSION_TAG="version tag: \"$new_tag\""
+                            ;;
+                    esac
+                    COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
+                fi
+                ;;
+            *)
+                echo "Aborted. Discarding all changes…"
+                git restore --staged . 2>/dev/null || true
+                git restore . 2>/dev/null || true
+                [ -n "$GPG_FILE" ] && rm -f "$GPG_FILE"
+                [ -n "$CAND_FILE" ] && rm -f "$CAND_FILE"
+                echo "Working tree restored to HEAD. New archive removed."
+                exit 0
+                ;;
+        esac
+    done
+fi
+
+[ -n "$CAND_FILE" ] && rm -f "$CAND_FILE"
+
+if [ "$SKIP_ENCRYPT" = false ]; then
+    echo "Updating $VERSION_FILE with latest commit info..."
+    echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
 fi
 
 git add .
