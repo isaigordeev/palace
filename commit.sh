@@ -33,6 +33,121 @@ GPG_FILE="$TAR_FILE.gpg"
 PREFIX="chore(encrypted-notes): update palace notes"
 
 VERSION_FILE="version.txt"
+STATS_FILE="version-stats.txt"
+DAILY_ROOT_REL="palace/notes/management/daily"
+
+# =====================================================================
+# HELPERS  (build the rich version-stats.txt line)
+# =====================================================================
+
+fmt_bytes() {
+    awk -v b="$1" 'BEGIN{
+        b += 0
+        if (b < 1024) printf "%d B", b
+        else if (b < 1048576) printf "%.1f KB", b/1024
+        else if (b < 1073741824) printf "%.1f MB", b/1048576
+        else printf "%.2f GB", b/1073741824
+    }'
+}
+
+recent_activity_7d() {
+    local active=0 i d y m
+    for i in 0 1 2 3 4 5 6; do
+        d=$(date -j -v-${i}d +"%Y-%m-%d" 2>/dev/null) || continue
+        y="${d:0:4}"; m="${d:5:2}"
+        [ -f "$DAILY_ROOT_REL/$y/$m/$d.md" ] && active=$((active + 1))
+    done
+    echo "$active"
+}
+
+current_streak() {
+    local streak=0 i=0 d y m
+    while [ "$i" -lt 366 ]; do
+        d=$(date -j -v-${i}d +"%Y-%m-%d" 2>/dev/null) || break
+        y="${d:0:4}"; m="${d:5:2}"
+        if [ -f "$DAILY_ROOT_REL/$y/$m/$d.md" ]; then
+            streak=$((streak + 1)); i=$((i + 1))
+        else
+            break
+        fi
+    done
+    echo "$streak"
+}
+
+# Top remaining candidate at slot, excluding tags chosen at lower slots.
+default_for_tag() {
+    local slot="$1" line
+    [ -z "$CAND_FILE" ] && return
+    [ ! -s "$CAND_FILE" ] && return
+    while IFS= read -r line; do
+        if [ "$slot" -ge 2 ] && [ "$line" = "$TAG1" ]; then continue; fi
+        if [ "$slot" -ge 3 ] && [ "$line" = "$TAG2" ]; then continue; fi
+        printf "%s" "$line"
+        return
+    done < "$CAND_FILE"
+}
+
+# Prompt one tag slot. Input rules: empty = keep default; "a" = увы;
+# digits = Nth candidate; anything else = literal word.
+prompt_tag() {
+    local slot="$1" current="$2" label new picked
+    label="$current"
+    [ -z "$label" ] && label="(none)"
+    if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        printf "Tag %d (default: %s): " "$slot" "$label" >/dev/tty
+        read -r new </dev/tty
+    else
+        printf "Tag %d (default: %s): " "$slot" "$label" >&2
+        read -r new
+    fi
+    case "$new" in
+        '')        printf "%s" "$current" ;;
+        a|A)       printf "%s" "увы" ;;
+        *[!0-9]*)  printf "%s" "$new" ;;
+        *)
+            picked=$(sed -n "${new}p" "$CAND_FILE")
+            if [ -n "$picked" ]; then
+                printf "%s" "$picked"
+            else
+                printf "%s" "$new"
+            fi
+            ;;
+    esac
+}
+
+# Build COMMIT_MESSAGE (canonical) and STATS_LINE (rich).
+build_messages() {
+    if [ "$SKIP_ENCRYPT" = false ]; then
+        if [ "$USE_DEFAULT_TAG" = true ]; then
+            VERSION_TAG="version tag: \"default\""
+        else
+            VERSION_TAG="version tag: \"$TAG1\""
+        fi
+        COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
+    else
+        COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
+    fi
+    if [ "$SKIP_ENCRYPT" = false ]; then
+        local tags
+        if [ "$USE_DEFAULT_TAG" = true ]; then
+            tags="default"
+        else
+            tags="$TAG1"
+            [ -n "$TAG2" ] && tags="$tags, $TAG2"
+            [ -n "$TAG3" ] && tags="$tags, $TAG3"
+        fi
+        local files="(+$ADDED ~$MODIFIED"
+        [ "$DELETED" -gt 0 ] && files="$files -$DELETED"
+        files="$files)"
+        STATS_LINE="[$TIMESTAMP] $NOTE_COUNT notes $files"
+        STATS_LINE="$STATS_LINE +$LINES_ADDED/-$LINES_DELETED lines"
+        STATS_LINE="$STATS_LINE  $SIZE_STR$DELTA_STR"
+        STATS_LINE="$STATS_LINE  tags: $tags"
+        STATS_LINE="$STATS_LINE  7d: $ACTIVE_7D/7  streak: $STREAK"
+    else
+        STATS_LINE=""
+    fi
+}
 
 # =====================================================================
 # PARSE ARGUMENTS
@@ -98,21 +213,68 @@ echo "--------------------------------------------------------------"
 # Get version tag from palace subdirectory's last commit
 # Show debug info locally, but only capture the version tag line
 CAND_FILE=""
+TAG1=""; TAG2=""; TAG3=""
+NOTE_COUNT=0
+ADDED=0; MODIFIED=0; DELETED=0
+LINES_ADDED=0; LINES_DELETED=0
+BYTES_WRITTEN=0; BYTES_REMOVED=0; BYTES_DELTA=0
+SIZE_STR=""; DELTA_STR=""
+ACTIVE_7D=0; STREAK=0
+
 if [ "$SKIP_ENCRYPT" = false ]; then
     if [ "$USE_DEFAULT_TAG" = true ]; then
-        VERSION_TAG="default"
+        TAG1="default"
     else
         ./tag.sh "$PALACE_DIR" --debug
-        VERSION_TAG=$(./tag.sh "$PALACE_DIR")
         CAND_FILE=$(mktemp -t commit_cand.XXXXXX)
         ./tag.sh "$PALACE_DIR" --debug 2>/dev/null \
             | grep -E '^\s*len=' | head -10 \
             | awk '{print $NF}' > "$CAND_FILE"
+        TAG1=$(sed -n '1p' "$CAND_FILE")
+        TAG2=$(default_for_tag 2)
+        TAG3=$(default_for_tag 3)
     fi
-    COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
-else
-    COMMIT_MESSAGE="$PREFIX [$TIMESTAMP]"
+
+    NOTE_COUNT=$(find "$PALACE_DIR" -name '*.md' 2>/dev/null \
+                  | wc -l | tr -d ' ')
+    if [ -d "$PALACE_DIR/.git" ]; then
+        DIFF=$(git -C "$PALACE_DIR" show HEAD --name-status \
+               --format= 2>/dev/null || true)
+        ADDED=$(printf "%s\n"   "$DIFF" | grep -c '^A' || true)
+        MODIFIED=$(printf "%s\n" "$DIFF" | grep -c '^M' || true)
+        DELETED=$(printf "%s\n"  "$DIFF" | grep -c '^D' || true)
+        NS=$(git -C "$PALACE_DIR" show HEAD --numstat \
+             --format= 2>/dev/null || true)
+        LINES_ADDED=$(printf "%s\n" "$NS" \
+            | awk '$1 ~ /^[0-9]+$/{a+=$1} END{print a+0}')
+        LINES_DELETED=$(printf "%s\n" "$NS" \
+            | awk '$2 ~ /^[0-9]+$/{d+=$2} END{print d+0}')
+        DIFF_RAW=$(git -C "$PALACE_DIR" show HEAD \
+                   --format= 2>/dev/null || true)
+        BYTES_PAIR=$(LC_ALL=C printf "%s\n" "$DIFF_RAW" \
+            | LC_ALL=C awk '
+                /^\+\+\+/ {next}
+                /^---/    {next}
+                /^\+/     {a += length($0) - 1}
+                /^-/      {d += length($0) - 1}
+                END       {printf "%d %d", a+0, d+0}
+            ')
+        BYTES_WRITTEN=${BYTES_PAIR% *}
+        BYTES_REMOVED=${BYTES_PAIR#* }
+        BYTES_DELTA=$((BYTES_WRITTEN - BYTES_REMOVED))
+    fi
+    SIZE_STR=$(fmt_bytes "$BYTES_WRITTEN")
+    if [ "$BYTES_DELTA" -ge 0 ]; then
+        DELTA_STR=" (+$(fmt_bytes "$BYTES_DELTA"))"
+    else
+        DELTA_STR=" (-$(fmt_bytes "$((0 - BYTES_DELTA))"))"
+    fi
+
+    ACTIVE_7D=$(recent_activity_7d)
+    STREAK=$(current_streak)
 fi
+
+build_messages
 
 # =====================================================================
 # CONFIRM (re-prompts after each [c] choice)
@@ -130,47 +292,52 @@ if [ "$ASSUME_YES" = false ]; then
     while true; do
         echo
         echo "--------------------------------------------------------------"
-        echo "Commit message: $COMMIT_MESSAGE"
+        echo "git commit  : $COMMIT_MESSAGE"
+        [ -n "$STATS_LINE" ] && echo "stats line  : $STATS_LINE"
         echo "  [y] yes — commit and push"
         echo "  [n] no  — discard everything"
-        echo "  [c] choose another tag"
+        echo "  [c] choose tags"
         printf "Choice [y/N/c]: "
         read_tty reply
         case "$reply" in
             y|Y|yes|YES|Yes)
-                break
+                echo
+                echo "=== Final check before push ==="
+                echo "git commit  : $COMMIT_MESSAGE"
+                [ -n "$STATS_LINE" ] && echo "stats line  : $STATS_LINE"
+                printf "Push? [y/N]: "
+                read_tty confirm
+                case "$confirm" in
+                    y|Y|yes|YES|Yes) break ;;
+                    *)
+                        echo "Cancelled. Returning to menu."
+                        continue ;;
+                esac
                 ;;
             c|C|choose|CHOOSE)
                 if [ -z "$CAND_FILE" ] || [ ! -s "$CAND_FILE" ]; then
                     echo "No candidates (--no-encrypt or --no-tag in effect)."
-                    printf "Enter custom tag word (empty to cancel): "
+                    printf "Enter custom TAG1 (empty to cancel): "
                     read_tty new_tag
+                    if [ -n "$new_tag" ]; then
+                        TAG1="$new_tag"
+                        build_messages
+                    fi
                 else
                     echo
                     echo "Top candidates:"
                     awk '{ printf "  [%d] %s\n", NR, $0 }' "$CAND_FILE"
+                    echo "  [a] увы  (fallback)"
                     echo
-                    printf "Enter number 1-%d, a custom word, or empty to cancel: " \
-                        "$(wc -l < "$CAND_FILE" | tr -d ' ')"
-                    read_tty new_tag
-                    case "$new_tag" in
-                        ''|*[!0-9]*) : ;;
-                        *)
-                            picked=$(sed -n "${new_tag}p" "$CAND_FILE")
-                            [ -n "$picked" ] && new_tag="$picked"
-                            ;;
-                    esac
-                fi
-                if [ -n "$new_tag" ]; then
-                    case "$new_tag" in
-                        "version tag:"*)
-                            VERSION_TAG="$new_tag"
-                            ;;
-                        *)
-                            VERSION_TAG="version tag: \"$new_tag\""
-                            ;;
-                    esac
-                    COMMIT_MESSAGE="$PREFIX [$TIMESTAMP] $VERSION_TAG"
+                    n_cand=$(wc -l < "$CAND_FILE" | tr -d ' ')
+                    echo "Per slot: number 1-$n_cand, a custom word,"
+                    echo "          'a' for увы, or empty to keep default."
+                    TAG1=$(prompt_tag 1 "$TAG1")
+                    TAG2=$(default_for_tag 2)
+                    TAG2=$(prompt_tag 2 "$TAG2")
+                    TAG3=$(default_for_tag 3)
+                    TAG3=$(prompt_tag 3 "$TAG3")
+                    build_messages
                 fi
                 ;;
             *)
@@ -189,8 +356,9 @@ fi
 [ -n "$CAND_FILE" ] && rm -f "$CAND_FILE"
 
 if [ "$SKIP_ENCRYPT" = false ]; then
-    echo "Updating $VERSION_FILE with latest commit info..."
+    echo "Updating $VERSION_FILE and $STATS_FILE..."
     echo "$COMMIT_MESSAGE" >> "$VERSION_FILE"
+    [ -n "$STATS_LINE" ] && echo "$STATS_LINE" >> "$STATS_FILE"
 fi
 
 git add .
