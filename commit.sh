@@ -141,7 +141,7 @@ build_messages() {
         files="$files)"
         STATS_LINE="[$TIMESTAMP] $NOTE_COUNT notes $files"
         STATS_LINE="$STATS_LINE +$LINES_ADDED/-$LINES_DELETED lines"
-        STATS_LINE="$STATS_LINE  $SIZE_STR$DELTA_STR"
+        STATS_LINE="$STATS_LINE  $BYTE_DELTA_STR"
         STATS_LINE="$STATS_LINE  tags: $tags"
         STATS_LINE="$STATS_LINE  7d: $ACTIVE_7D/7  streak: $STREAK"
     else
@@ -218,7 +218,7 @@ NOTE_COUNT=0
 ADDED=0; MODIFIED=0; DELETED=0
 LINES_ADDED=0; LINES_DELETED=0
 BYTES_WRITTEN=0; BYTES_REMOVED=0; BYTES_DELTA=0
-SIZE_STR=""; DELTA_STR=""
+BYTE_DELTA_STR=""
 ACTIVE_7D=0; STREAK=0
 
 if [ "$SKIP_ENCRYPT" = false ]; then
@@ -263,11 +263,10 @@ if [ "$SKIP_ENCRYPT" = false ]; then
         BYTES_REMOVED=${BYTES_PAIR#* }
         BYTES_DELTA=$((BYTES_WRITTEN - BYTES_REMOVED))
     fi
-    SIZE_STR=$(fmt_bytes "$BYTES_WRITTEN")
     if [ "$BYTES_DELTA" -ge 0 ]; then
-        DELTA_STR=" (+$(fmt_bytes "$BYTES_DELTA"))"
+        BYTE_DELTA_STR="+$(fmt_bytes "$BYTES_DELTA")"
     else
-        DELTA_STR=" (-$(fmt_bytes "$((0 - BYTES_DELTA))"))"
+        BYTE_DELTA_STR="-$(fmt_bytes "$((0 - BYTES_DELTA))")"
     fi
 
     ACTIVE_7D=$(recent_activity_7d)
