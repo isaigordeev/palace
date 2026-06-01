@@ -32,7 +32,7 @@ Options:
   -t, --type    month | year     Statistic scope             (default: month)
   --layout      git | tab        Year layout (year only)     (default: tab)
   -m, --month   MM               Month 1–12                  (default: current)
-  -y, --year    YYYY             Year                        (default: current)
+  -y, --year    YY|YYYY          Year; 2-digit (25 → 2025) ok (default: current)
   -c, --current                  Reset to current month/year
   -h, --help                     This help
 
@@ -54,6 +54,9 @@ EOF
 done
 
 MONTH=$(printf "%02d" "$((10#$MONTH))")
+case "$YEAR" in
+    [0-9][0-9]) YEAR="20$YEAR" ;;
+esac
 
 sym() {
     local s=$1
