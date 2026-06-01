@@ -4,6 +4,14 @@
 # Sourced by ~/.dotfiles/zsh/aliases.zsh when this file is readable.
 # Lives in the palace wrapper repo so the aliases ship with palace
 # itself and stay in sync. PALACE_DIR is exported by the caller.
+#
+# Commands:
+#   daily [DD MM YY|YYYY]  open/create a daily note (today by default)
+#   weekly                 open/create this ISO week's note
+#   shot                   timestamped daily snapshot note
+#   tg [-l | -n]           manage murmur notes
+#   dn [-n | -l | -L]      manage do-notes (week-based, last-pointer)
+#   pst [calendar args]    pass-through to _calendar.sh for stats
 
 # Guard for palace functions. Checks in stages so error messages point at
 # the real problem (wrapper dir missing vs palace missing vs not yet decrypted).
@@ -226,4 +234,17 @@ tg() {
          return 1
          ;;
    esac
+}
+
+# pst [calendar args]   wrapper around _calendar.sh
+#   pst                 current month
+#   pst -t year         year view
+#   pst -h              forwards to _calendar.sh's help
+pst() {
+   local palace_repo="${PALACE_DIR%/*}"
+   if [ ! -x "$palace_repo/_calendar.sh" ]; then
+      echo "pst: _calendar.sh missing at $palace_repo" >&2
+      return 1
+   fi
+   ( cd "$palace_repo" && ./_calendar.sh "$@" )
 }

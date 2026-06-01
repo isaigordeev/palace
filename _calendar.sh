@@ -8,6 +8,7 @@ YEAR=$(date +%Y)
 MONTH=$(date +%m)
 TYPE="month"
 LAYOUT="git"
+PLOT=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -21,6 +22,8 @@ while [ $# -gt 0 ]; do
             TYPE="$2"; shift 2 ;;
         --layout)
             LAYOUT="$2"; shift 2 ;;
+        -p|--plot)
+            PLOT=1; shift ;;
         -h|--help)
             cat <<EOF
 Usage: $0 [options]
@@ -34,6 +37,8 @@ Options:
   -m, --month   MM               Month 1–12                  (default: current)
   -y, --year    YY|YYYY          Year; 2-digit (25 → 2025) ok (default: current)
   -c, --current                  Reset to current month/year
+  -p, --plot                     Replace heatmap with ASCII line chart
+                                 (month: daily bins, year: 7-day bins)
   -h, --help                     This help
 
 Heatmap (by file size):
@@ -335,19 +340,232 @@ render_year_stats() {
     printf "\n"
 }
 
+# ---------- PLOT MODE ----------
+
+# Render an ASCII line chart from a sequence of integer values.
+# Args: MAX WIDTH HEIGHT VAL0 VAL1 ... VAL(W-1)
+# Uses box-drawing chars: ┼ ┤ ─ │ ╭ ╮ ╰ ╯
+draw_line_chart() {
+    local max=$1 W=$2 H=$3
+    shift 3
+    local values=("$@")
+    [ "$max" -le 0 ] && max=1
+
+    local -a ROWS
+    local i
+    for ((i=0; i<W; i++)); do
+        local v=${values[$i]:-0}
+        ROWS[$i]=$(( (max - v) * (H - 1) / max ))
+    done
+
+    local total=$((H * W))
+    local -a GRID
+    for ((i=0; i<total; i++)); do GRID[$i]=' '; done
+
+    GRID[$(( ROWS[0] * W + 0 ))]='●'
+    for ((i=1; i<W; i++)); do
+        local r=${ROWS[$i]} prev=${ROWS[$((i-1))]} rr
+        if [ "$prev" -eq "$r" ]; then
+            GRID[$((r * W + i))]='─'
+        elif [ "$prev" -lt "$r" ]; then
+            GRID[$((prev * W + i))]='╮'
+            for ((rr=prev+1; rr<r; rr++)); do
+                GRID[$((rr * W + i))]='│'
+            done
+            GRID[$((r * W + i))]='╰'
+        else
+            GRID[$((prev * W + i))]='╯'
+            for ((rr=r+1; rr<prev; rr++)); do
+                GRID[$((rr * W + i))]='│'
+            done
+            GRID[$((r * W + i))]='╭'
+        fi
+    done
+
+    local r c
+    for ((r=0; r<H; r++)); do
+        local val=$(( max * (H - 1 - r) / (H - 1) ))
+        local label
+        label=$(fmt "$val")
+        if [ "$r" -eq 0 ]; then
+            printf "%9s ┼" "$label"
+        else
+            printf "%9s ┤" "$label"
+        fi
+        for ((c=0; c<W; c++)); do
+            printf "%s" "${GRID[$((r * W + c))]}"
+        done
+        printf "\n"
+    done
+    printf "%9s └" "0"
+    for ((c=0; c<W; c++)); do printf "─"; done
+    printf "\n"
+}
+
+render_plot_month() {
+    local YEAR=$1 MONTH=$2
+    local DIR="$DAILY_ROOT/$YEAR/$MONTH"
+    local LAST_DAY MONTH_NAME
+    LAST_DAY=$(cal "$((10#$MONTH))" "$YEAR" \
+               | awk 'NF{d=$NF} END{print d}')
+    MONTH_NAME=$(date -j -f "%Y-%m-%d" \
+                 "$YEAR-$MONTH-01" "+%B %Y")
+
+    local -a SIZES vals
+    local max=0 d
+    for ((d=1; d<=LAST_DAY; d++)); do
+        local f
+        f=$(printf "%s/%s-%s-%02d.md" \
+            "$DIR" "$YEAR" "$MONTH" "$d")
+        if [ -f "$f" ]; then
+            SIZES[$d]=$(stat -f%z "$f" 2>/dev/null || echo 0)
+        else
+            SIZES[$d]=0
+        fi
+        vals[$((d-1))]=${SIZES[$d]}
+        [ "${SIZES[$d]}" -gt "$max" ] && max=${SIZES[$d]}
+    done
+
+    printf "\n          %s — daily bytes\n\n" "$MONTH_NAME"
+    if [ "$max" -eq 0 ]; then
+        printf "          (no data)\n"
+    else
+        draw_line_chart "$max" "$LAST_DAY" 8 "${vals[@]}"
+        printf "%11s" ""
+        for ((d=1; d<=LAST_DAY; d++)); do
+            if [ "$d" -eq 1 ] || [ $((d % 5)) -eq 0 ]; then
+                printf "%d" "$d"
+                [ "$d" -ge 10 ] && d=$((d + 1))
+            else
+                printf " "
+            fi
+        done
+        printf "\n"
+    fi
+
+    # Stats (same shape as render_month)
+    local days_written=0 total=0 longest=0 run=0
+    local best_size=0 best_day=0 s
+    for ((d=1; d<=LAST_DAY; d++)); do
+        s=${SIZES[$d]}
+        if [ "$s" -gt 0 ]; then
+            days_written=$((days_written + 1))
+            total=$((total + s))
+            run=$((run + 1))
+            [ $run -gt $longest ] && longest=$run
+            if [ "$s" -gt "$best_size" ]; then
+                best_size=$s; best_day=$d
+            fi
+        else run=0
+        fi
+    done
+    local end=$LAST_DAY
+    [ "$YEAR-$MONTH" = "$(date +%Y-%m)" ] \
+        && end=$((10#$(date +%d)))
+    local current_run=0
+    for ((d=end; d>=1; d--)); do
+        if [ "${SIZES[$d]}" -gt 0 ]; then
+            current_run=$((current_run + 1))
+        else break
+        fi
+    done
+    local pct=0
+    [ $LAST_DAY -gt 0 ] \
+        && pct=$(( days_written * 100 / LAST_DAY ))
+    printf "\n     ── Stats ─────────────────────────\n"
+    printf "     Days written : %d / %d   (%d%%)\n" \
+        "$days_written" "$LAST_DAY" "$pct"
+    printf "     Total        : %s\n" "$(fmt "$total")"
+    if [ "$days_written" -gt 0 ]; then
+        printf "     Avg / day    : %s\n" \
+            "$(fmt $((total / days_written)))"
+    else
+        printf "     Avg / day    : —\n"
+    fi
+    printf "     Longest run  : %d days\n" "$longest"
+    printf "     Current run  : %d days\n" "$current_run"
+    if [ "$best_day" -gt 0 ]; then
+        printf "     Best day     : %s %d   (%s)\n" \
+            "$(date -j -f "%Y-%m-%d" \
+                "$YEAR-$MONTH-$(printf %02d $best_day)" "+%b")" \
+            "$best_day" "$(fmt "$best_size")"
+    fi
+    printf "\n"
+}
+
+# Year plot: bins days into fixed 7-day chunks from Jan 1.
+render_plot_year() {
+    local y=$1
+    local nweeks=$(( (YTOTAL_DAYS + 6) / 7 ))
+    local -a WEEK_SUMS vals
+    local w
+    for ((w=0; w<nweeks; w++)); do WEEK_SUMS[$w]=0; done
+
+    local doy sz
+    for ((doy=1; doy<=YTOTAL_DAYS; doy++)); do
+        local w_idx=$(( (doy - 1) / 7 ))
+        sz=${YSIZE[$doy]:-0}
+        WEEK_SUMS[$w_idx]=$((WEEK_SUMS[$w_idx] + sz))
+    done
+
+    local max=0
+    for ((w=0; w<nweeks; w++)); do
+        vals[$w]=${WEEK_SUMS[$w]}
+        [ "${WEEK_SUMS[$w]}" -gt "$max" ] && max=${WEEK_SUMS[$w]}
+    done
+
+    printf "\n          %d — weekly bytes (7-day bins)\n\n" "$y"
+    if [ "$max" -eq 0 ]; then
+        printf "          (no data)\n\n"
+        return
+    fi
+    draw_line_chart "$max" "$nweeks" 8 "${vals[@]}"
+
+    # Month labels at the week containing day 1 of each month.
+    local -a MONTH_WEEK
+    local cum=0 m_n
+    for m_n in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        MONTH_WEEK[$m_n]=$(( cum / 7 ))
+        cum=$((cum + YLAST[m_n]))
+    done
+
+    printf "%11s" ""
+    local printed=0
+    for m_n in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        local target=${MONTH_WEEK[$m_n]}
+        while [ $printed -lt $target ]; do
+            printf " "; printed=$((printed + 1))
+        done
+        local label
+        label=$(date -j -f "%Y-%m-%d" \
+                "$y-$(printf %02d $m_n)-01" "+%b")
+        printf "%s" "$label"
+        printed=$((printed + 3))
+    done
+    printf "\n"
+}
+
 # ---------- DISPATCH ----------
 
 case "$TYPE" in
     month)
-        render_month "$YEAR" "$MONTH"
+        if [ "$PLOT" -eq 1 ]; then
+            render_plot_month "$YEAR" "$MONTH"
+        else
+            render_month "$YEAR" "$MONTH"
+        fi
         ;;
     year)
         collect_year "$YEAR"
-        case "$LAYOUT" in
-            git) render_year_git "$YEAR" ;;
-            tab) render_year_tab "$YEAR" ;;
-            *)   echo "Unknown layout: $LAYOUT (expected git|tab)" >&2; exit 1 ;;
-        esac
+        if [ "$PLOT" -eq 1 ]; then
+            render_plot_year "$YEAR"
+        else
+            case "$LAYOUT" in
+                git) render_year_git "$YEAR" ;;
+                tab) render_year_tab "$YEAR" ;;
+                *)   echo "Unknown layout: $LAYOUT (expected git|tab)" >&2; exit 1 ;;
+            esac
+        fi
         render_year_stats "$YEAR"
         ;;
     *)
