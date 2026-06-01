@@ -41,8 +41,77 @@ EOF
    ( cd "$PALACE_DIR" && ${EDITOR:-nvim} "$note" )
 }
 
-# Today's daily note: notes/management/daily/YYYY/MM/YYYY-MM-DD.md
-daily()  { _palace_note "notes/management/daily/$(date +'%Y/%m')" "$(date +'%Y-%m-%d').md"       daily;  }
+# Daily note: notes/management/daily/YYYY/MM/YYYY-MM-DD.md
+#   daily                       today's
+#   daily -d DD -m MM -y YY     specific (flags can come in any order)
+#   daily DD MM YY              positional (day month year)
+#   year accepts 2-digit (25 → 2025) or 4-digit
+#   missing field defaults to today's component
+#   non-existent date file is created via _palace_note
+daily() {
+   local dd mm yy
+   while [ $# -gt 0 ]; do
+      case "$1" in
+         -d|--day)   dd="$2"; shift 2 ;;
+         -m|--month) mm="$2"; shift 2 ;;
+         -y|--year)  yy="$2"; shift 2 ;;
+         -h|--help)
+            cat <<EOF
+Usage: daily [options]
+       daily [DD [MM [YY|YYYY]]]
+
+Open or create a daily note at
+notes/management/daily/YYYY/MM/YYYY-MM-DD.md.
+No args = today; with date args = that date.
+
+Options:
+  -d, --day DD     day of month (1-31)
+  -m, --month MM   month (1-12)
+  -y, --year YY    year; 2-digit (25 → 2025) or 4-digit
+  -h, --help       this help
+
+Positional form: daily DD MM YY  (day month year)
+
+Rules:
+  Missing component  → defaults to today's value
+  Year 25 / 2025     → both accepted
+  Invalid date       → rejected (e.g. Feb 31)
+
+Examples:
+  daily                       today
+  daily 05 05 25              May 5, 2025
+  daily -d 05 -m 05 -y 2025   same
+  daily -y 25                 today's day+month, year 2025
+  daily -d 12 -m 3 -y 2024    March 12, 2024
+EOF
+            return 0 ;;
+         *)
+            if   [ -z "$dd" ]; then dd="$1"
+            elif [ -z "$mm" ]; then mm="$1"
+            elif [ -z "$yy" ]; then yy="$1"
+            else echo "daily: extra arg: $1" >&2; return 1
+            fi
+            shift ;;
+      esac
+   done
+   [ -z "$dd" ] && dd=$(date +%d)
+   [ -z "$mm" ] && mm=$(date +%m)
+   [ -z "$yy" ] && yy=$(date +%Y)
+   dd=$(printf "%02d" "$((10#$dd))")
+   mm=$(printf "%02d" "$((10#$mm))")
+   case "$yy" in
+      [0-9][0-9]) yy="20$yy" ;;
+   esac
+   local parsed
+   parsed=$(date -j -f "%Y-%m-%d" "$yy-$mm-$dd" \
+            "+%Y-%m-%d" 2>/dev/null)
+   if [ "$parsed" != "$yy-$mm-$dd" ]; then
+      echo "daily: invalid date $yy-$mm-$dd" >&2
+      return 1
+   fi
+   _palace_note "notes/management/daily/$yy/$mm" \
+                "$yy-$mm-$dd.md" daily
+}
 
 # This ISO week's note: notes/management/weekly/YYYY-Www.md
 weekly() { _palace_note "notes/management/weekly"                  "$(date +'%G-W%V').md"          weekly; }
