@@ -9,6 +9,7 @@ MONTH=$(date +%m)
 TYPE="month"
 LAYOUT="git"
 PLOT=0
+POSITIONAL=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -44,9 +45,16 @@ Options:
 Heatmap (by file size):
   ·  empty    ░ <1KB    ▒ 1–4KB    ▓ 4–10KB    █ >10KB
 
+Positional form (mirrors daily — day is ignored for calendar):
+  $0 MM                          month MM, current year
+  $0 MM YY                       month MM, year YY (2- or 4-digit)
+  $0 DD MM YY                    same as MM YY (day discarded)
+
 Examples:
   $0                             current month
   $0 -m 04                       April of current year
+  $0 5 24                        May 2024
+  $0 5 10 24                     October 2024 (day discarded)
   $0 -m 12 -y 2025               December 2025
   $0 -t year                     current year, tab layout (current month bold)
   $0 -t year --layout git        current year, GitHub-style heatmap
@@ -54,9 +62,22 @@ Examples:
 EOF
             exit 0 ;;
         *)
-            echo "Unknown option: $1" >&2; exit 1 ;;
+            POSITIONAL+=("$1"); shift ;;
     esac
 done
+
+# Positional shape, mirroring daily but day is ignored (calendar shows
+# month/year, not a single day):
+#   1 arg : MM
+#   2 args: MM YY
+#   3 args: DD MM YY   (DD parsed, then dropped)
+case ${#POSITIONAL[@]} in
+    0) ;;
+    1) MONTH="${POSITIONAL[0]}" ;;
+    2) MONTH="${POSITIONAL[0]}"; YEAR="${POSITIONAL[1]}" ;;
+    3) MONTH="${POSITIONAL[1]}"; YEAR="${POSITIONAL[2]}" ;;
+    *) echo "Too many positional args" >&2; exit 1 ;;
+esac
 
 MONTH=$(printf "%02d" "$((10#$MONTH))")
 case "$YEAR" in
