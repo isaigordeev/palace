@@ -25,15 +25,19 @@ _palace_check() {
 
 # Create-or-open $PALACE_DIR/<subdir>/<filename> with a date + [[tag]] header,
 # then cd into palace and open in $EDITOR. Used by daily/weekly/shot/tg-create.
+# Header date is always the current creation time. Optional 4th arg is
+# appended to the header line as a marker (e.g. "*" for back-dated notes).
 _palace_note() {
-   local subdir="$1" filename="$2" tag="$3"
+   local subdir="$1" filename="$2" tag="$3" marker="$4"
    _palace_check || return 1
    local note_dir="$PALACE_DIR/$subdir"
    mkdir -p "$note_dir"
    local note="$note_dir/$filename"
    if [ ! -s "$note" ]; then
+      local stamp="$(date +'%a %d %b %Y at %H:%M:%S')"
+      [ -n "$marker" ] && stamp="$stamp $marker"
       cat > "$note" <<EOF
-$(date +'%a %d %b %Y at %H:%M:%S')
+$stamp
 
 [[$tag]]
 EOF
@@ -49,12 +53,12 @@ EOF
 #   missing field defaults to today's component
 #   non-existent date file is created via _palace_note
 daily() {
-   local dd mm yy
+   local dd mm yy explicit=0
    while [ $# -gt 0 ]; do
       case "$1" in
-         -d|--day)   dd="$2"; shift 2 ;;
-         -m|--month) mm="$2"; shift 2 ;;
-         -y|--year)  yy="$2"; shift 2 ;;
+         -d|--day)   dd="$2"; explicit=1; shift 2 ;;
+         -m|--month) mm="$2"; explicit=1; shift 2 ;;
+         -y|--year)  yy="$2"; explicit=1; shift 2 ;;
          -h|--help)
             cat <<EOF
 Usage: daily [options]
@@ -86,9 +90,9 @@ Examples:
 EOF
             return 0 ;;
          *)
-            if   [ -z "$dd" ]; then dd="$1"
-            elif [ -z "$mm" ]; then mm="$1"
-            elif [ -z "$yy" ]; then yy="$1"
+            if   [ -z "$dd" ]; then dd="$1"; explicit=1
+            elif [ -z "$mm" ]; then mm="$1"; explicit=1
+            elif [ -z "$yy" ]; then yy="$1"; explicit=1
             else echo "daily: extra arg: $1" >&2; return 1
             fi
             shift ;;
@@ -109,8 +113,10 @@ EOF
       echo "daily: invalid date $yy-$mm-$dd" >&2
       return 1
    fi
+   local marker=""
+   [ "$explicit" -eq 1 ] && marker="*"
    _palace_note "notes/management/daily/$yy/$mm" \
-                "$yy-$mm-$dd.md" daily
+                "$yy-$mm-$dd.md" daily "$marker"
 }
 
 # This ISO week's note: notes/management/weekly/YYYY-Www.md
