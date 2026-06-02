@@ -12,6 +12,8 @@
 #   tg [-l | -n]           manage murmur notes
 #   dn [-n | -l | -L]      manage do-notes (week-based, last-pointer)
 #   pst [calendar args]    pass-through to _calendar.sh for stats
+#
+# Short aliases:  dl → daily, wk → weekly
 
 # Guard for palace functions. Checks in stages so error messages point at
 # the real problem (wrapper dir missing vs palace missing vs not yet decrypted).
@@ -248,3 +250,7 @@ pst() {
    fi
    ( cd "$palace_repo" && ./_calendar.sh "$@" )
 }
+
+# Short aliases (functions so they resolve in non-interactive shells too)
+dl() { daily "$@"; }
+wk() { weekly "$@"; }
