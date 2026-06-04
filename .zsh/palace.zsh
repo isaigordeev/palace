@@ -44,7 +44,7 @@ _palace_note() {
    mkdir -p "$note_dir"
    local note="$note_dir/$filename"
    if [ ! -s "$note" ]; then
-      local stamp="$(date +'%a %d %b %Y at %H:%M:%S')"
+      local stamp="isg $(date +'%Y-%m-%d %H:%M:%S %z')"
       [ -n "$marker" ] && stamp="$stamp $marker"
       cat > "$note" <<EOF
 $stamp
