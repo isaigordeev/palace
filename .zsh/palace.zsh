@@ -124,7 +124,7 @@ EOF
       return 1
    fi
    local marker=""
-   [ "$explicit" -eq 1 ] && marker="*"
+   [ "$explicit" -eq 1 ] && marker="\*"
    _palace_note "notes/management/daily/$yy/$mm" \
                 "$yy-$mm-$dd.md" daily "$marker"
 }
