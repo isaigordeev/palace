@@ -50,16 +50,6 @@ fmt_bytes() {
     }'
 }
 
-recent_activity_7d() {
-    local active=0 i d y m
-    for i in 0 1 2 3 4 5 6; do
-        d=$(date -j -v-${i}d +"%Y-%m-%d" 2>/dev/null) || continue
-        y="${d:0:4}"; m="${d:5:2}"
-        [ -f "$DAILY_ROOT_REL/$y/$m/$d.md" ] && active=$((active + 1))
-    done
-    echo "$active"
-}
-
 current_streak() {
     local streak=0 i=0 d y m
     while [ "$i" -lt 366 ]; do
@@ -143,7 +133,7 @@ build_messages() {
         STATS_LINE="$STATS_LINE +$LINES_ADDED/-$LINES_DELETED lines"
         STATS_LINE="$STATS_LINE  $BYTE_DELTA_STR"
         STATS_LINE="$STATS_LINE  tags: $tags"
-        STATS_LINE="$STATS_LINE  7d: $ACTIVE_7D/7  streak: $STREAK"
+        STATS_LINE="$STATS_LINE  streak: $STREAK"
     else
         STATS_LINE=""
     fi
@@ -219,7 +209,7 @@ ADDED=0; MODIFIED=0; DELETED=0
 LINES_ADDED=0; LINES_DELETED=0
 BYTES_WRITTEN=0; BYTES_REMOVED=0; BYTES_DELTA=0
 BYTE_DELTA_STR=""
-ACTIVE_7D=0; STREAK=0
+STREAK=0
 
 if [ "$SKIP_ENCRYPT" = false ]; then
     if [ "$USE_DEFAULT_TAG" = true ]; then
@@ -269,7 +259,6 @@ if [ "$SKIP_ENCRYPT" = false ]; then
         BYTE_DELTA_STR="-$(fmt_bytes "$((0 - BYTES_DELTA))")"
     fi
 
-    ACTIVE_7D=$(recent_activity_7d)
     STREAK=$(current_streak)
 fi
 
