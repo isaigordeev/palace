@@ -26,10 +26,10 @@ To write and structure thoughts, ideas, and projects efficiently.
 
 Notes are organized into four main domains:
 
-- Resources
-- Projects
-- Management
-- Instances
+- resources
+- projects
+- management
+- instances
 
 Core links denote the meaning of most notes and are placed in
 corresponding folders.
@@ -50,17 +50,18 @@ corresponding folders.
 
 ### NOTE STRUCTURE
 
-- Title: {{date:ddd DD MMM YYYY}} at {{time:HH:mm:ss}}
-- Content: main body of the note
-- Tags: used to navigate topics and problems (e.g., ###return,
-  ###research)
-- Zettelkasten notes: for quick, time-linked thoughts, optionally
-  linked to daily notes
+   ```prefix```
+   isg 2026-06-05 10:46:12 +0200
+
+   ```content```
+
+   ```[[link 1]]```
+   ```[[link 2]]```
 
 ### USAGE
 
 - Notes can be nested or listed, each with a unique link.
-- Weekly notes contain past reflections and next-week plans.
+- Weekly notes contain past reflections and near-week plans.
 - The vault directory contains only folders and [[PALACE]].
 - If a relevant folder does not exist, create one and link
   appropriately.
@@ -68,9 +69,14 @@ corresponding folders.
 ### ZETTELKASTEN METHOD
 
 - Quick note capture system.
+- Quick note access system.
 - Notes are independent by default but can be linked to daily notes.
-- Time-stamped notes example: "2022 19 July 23.23 – Tretyakov
-  gallery"
+- Time-stamped modifications example:
+
+      ```
+      I love Tretyakov gallery 2022-07-22 22:23
+      I love very much Shishkin's bears 2026-06-05 10:44
+      ```
 
 ### FILES AND LINKS
 
