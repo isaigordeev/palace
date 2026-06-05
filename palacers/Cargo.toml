@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "palace-core",
+    "palace-orphans",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+palace-core = { path = "palace-core" }
+walkdir = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

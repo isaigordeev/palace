@@ -1,9 +1,10 @@
 #!/bin/sh
 # Find true orphan .md notes: no outbound [[link]] and no inbound link.
-# Default runtime is zig (compiled to ~/.cache/palace/_orphans);
-# pass --runtime sh to use the pure-shell fallback.
+# Default runtime is rust (built via `cargo build --release` inside
+# ./palacers); pass --runtime sh for the pure-shell fallback, or
+# --runtime zig to use the legacy zig backend.
 
-RUNTIME=zig
+RUNTIME=rust
 ROOT="palace/notes"
 VERBOSE=0
 
@@ -22,18 +23,22 @@ How a match is decided:
   ASCII case-insensitive; non-ASCII bytes are matched exact.
 
 Options:
-  -R, --runtime BACKEND   zig | sh                  (default: zig)
+  -R, --runtime BACKEND   rust | zig | sh         (default: rust)
   -r, --root DIR          Search root      (default: palace/notes)
   -v, --verbose           Show mtime + size next to each path
   -h, --help              This help
 
 Examples:
-  $0                            scan default root, zig backend
+  $0                            scan default root, rust backend
   $0 -v                         include mtime + size
-  $0 -R sh                      use shell fallback (no zig needed)
+  $0 -R sh                      use shell fallback (no toolchain)
+  $0 -R zig                     use legacy zig backend
   $0 -r palace/notes/management scan a subtree
 
 Notes:
+  The rust backend lives in ./palacers (cargo workspace). It is
+  built on first run via \`cargo build --release\` and reused from
+  palacers/target/release/palace-orphans. Requires rustup/cargo.
   The zig backend is compiled on first run to
   ~/.cache/palace/_orphans. Recompiled when _orphans.zig
   changes. Requires \`brew install zig\`.
@@ -56,6 +61,42 @@ done
 
 # Resolve script directory robustly.
 SCRIPT_DIR=$(cd "$(dirname "$0")" 2>/dev/null && pwd) || SCRIPT_DIR="$PWD"
+
+# ---------------- RUST BACKEND ----------------
+
+run_rust() {
+    if ! command -v cargo >/dev/null 2>&1; then
+        echo "_orphans.sh: cargo not found." >&2
+        echo "  Install rust (https://rustup.rs) or rerun" >&2
+        echo "  with --runtime sh." >&2
+        exit 1
+    fi
+    PROJ="$SCRIPT_DIR/palacers"
+    if [ ! -f "$PROJ/Cargo.toml" ]; then
+        echo "_orphans.sh: $PROJ/Cargo.toml missing." >&2
+        exit 1
+    fi
+    BIN="$PROJ/target/release/palace-orphans"
+    NEEDS_BUILD=0
+    if [ ! -s "$BIN" ]; then
+        NEEDS_BUILD=1
+    elif [ -n "$(find "$PROJ" -path "$PROJ/target" -prune -o \
+            \( -name '*.rs' -o -name 'Cargo.toml' \
+               -o -name 'Cargo.lock' \) \
+            -newer "$BIN" -print 2>/dev/null | head -n 1)" ]; then
+        NEEDS_BUILD=1
+    fi
+    if [ "$NEEDS_BUILD" -eq 1 ]; then
+        echo "_orphans.sh: building rust binary…" >&2
+        ( cd "$PROJ" && cargo build --release --quiet \
+              -p palace-orphans ) >&2 || exit 1
+    fi
+    if [ "$VERBOSE" -eq 1 ]; then
+        exec "$BIN" -r "$ROOT" -v
+    else
+        exec "$BIN" -r "$ROOT"
+    fi
+}
 
 # ---------------- ZIG BACKEND ----------------
 
@@ -160,9 +201,10 @@ run_sh() {
 }
 
 case "$RUNTIME" in
-    zig) run_zig ;;
-    sh)  run_sh ;;
+    rust) run_rust ;;
+    zig)  run_zig ;;
+    sh)   run_sh ;;
     *)
-        echo "Unknown runtime: $RUNTIME (expected zig|sh)" >&2
+        echo "Unknown runtime: $RUNTIME (expected rust|zig|sh)" >&2
         exit 1 ;;
 esac
