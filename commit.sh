@@ -134,6 +134,8 @@ build_messages() {
         STATS_LINE="$STATS_LINE  $BYTE_DELTA_STR"
         STATS_LINE="$STATS_LINE  tags: $tags"
         STATS_LINE="$STATS_LINE  streak: $STREAK"
+        [ -n "$INNER_LAST_COMMIT" ] && \
+            STATS_LINE="$STATS_LINE  last: \"$INNER_LAST_COMMIT\""
     else
         STATS_LINE=""
     fi
@@ -210,6 +212,7 @@ LINES_ADDED=0; LINES_DELETED=0
 BYTES_WRITTEN=0; BYTES_REMOVED=0; BYTES_DELTA=0
 BYTE_DELTA_STR=""
 STREAK=0
+INNER_LAST_COMMIT=""
 
 if [ "$SKIP_ENCRYPT" = false ]; then
     if [ "$USE_DEFAULT_TAG" = true ]; then
@@ -228,6 +231,8 @@ if [ "$SKIP_ENCRYPT" = false ]; then
     NOTE_COUNT=$(find "$PALACE_DIR" -name '*.md' 2>/dev/null \
                   | wc -l | tr -d ' ')
     if [ -d "$PALACE_DIR/.git" ]; then
+        INNER_LAST_COMMIT=$(git -C "$PALACE_DIR" log -1 \
+            --pretty=%s 2>/dev/null || true)
         DIFF=$(git -C "$PALACE_DIR" show HEAD --name-status \
                --format= 2>/dev/null || true)
         ADDED=$(printf "%s\n"   "$DIFF" | grep -c '^A' || true)
