@@ -1,0 +1,46 @@
+# Files to delete from the palace repo.
+# Run a preview first:   python3 delete_notes.py --from-file to_delete.txt
+# Then to delete:        python3 delete_notes.py --from-file to_delete.txt --apply
+#
+# Lines starting with # and blank lines are ignored.
+# DELETE ANY LINE BELOW FOR A NOTE YOU WANT TO KEEP.
+# These are permanent on disk (recoverable only from VCS history).
+
+palace/notes/management/buylist.md
+palace/notes/management/do/do-2026-w22.md
+palace/notes/management/ifls.md
+palace/notes/management/xsystra.md
+palace/notes/me/agen.md
+palace/notes/me/amsterdam.md
+palace/notes/me/art/fauvisme.md
+palace/notes/me/art/impressionisme.md
+palace/notes/me/art/postimpressionisme.md
+palace/notes/me/atlantida.md
+palace/notes/me/books/godfather.md
+palace/notes/me/books/readlist.md
+palace/notes/me/films/allied.md
+palace/notes/me/films/arrival.md
+palace/notes/me/films/contact.md
+palace/notes/me/films/dune.md
+palace/notes/me/films/gattaca.md
+palace/notes/me/films/gentlemen.md
+palace/notes/me/films/intouchables.md
+palace/notes/me/films/jaws.md
+palace/notes/me/films/limitless.md
+palace/notes/me/films/magnolia.md
+palace/notes/me/films/midsommar.md
+palace/notes/me/films/persona.md
+palace/notes/me/films/shining.md
+palace/notes/me/films/titane.md
+palace/notes/me/films/u-571.md
+palace/notes/me/films/watchlist.md
+palace/notes/me/music/tchaikovsky.md
+palace/notes/me/netherlands.md
+palace/notes/me/silo.md
+palace/notes/me/sleep.md
+palace/notes/me/villeneuve-sur-lot.md
+palace/notes/me/wandering/anapa.md
+palace/notes/me/wandering/belarus.md
+palace/notes/me/wandering/chambon-sur-lac.md
+palace/notes/me/wandering/dolgoprudny.md
+palace/notes/me/films/дурак.md
